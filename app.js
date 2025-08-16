@@ -4,7 +4,7 @@ class DecibelMeter {
         this.meterId = 1;
         this.isConnected = false;
         this.isRecording = false;
-        this.currentSpl = 40;
+        this.currentSpl = 60;
         this.recordedValues = [];
         this.recordingStartTime = null;
         this.showingAverage = false; // Flag to track when center display shows average
@@ -14,7 +14,7 @@ class DecibelMeter {
         this.needleEndAngle = 180;    // 180 degrees (left side)
         
         // dB range
-        this.minDb = 40;
+        this.minDb = 60;
         this.maxDb = 100;
         
         this.initializeElements();
@@ -114,8 +114,9 @@ class DecibelMeter {
     }
     
     getColorClass(db) {
-        if (db < 60) return 'level-safe';
-        if (db < 75) return 'level-moderate';
+        return 'level-acroshow';
+        if (db < 70) return 'level-safe';
+        if (db < 80) return 'level-moderate';
         if (db < 90) return 'level-high';
         return 'level-dangerous';
     }
@@ -158,7 +159,7 @@ class DecibelMeter {
                 mode: 'SPL',
                 weighting: 'A',
                 filter: 'Slow',
-                highPassActive: true,
+                highPassActive: false,
                 rollingLeqActive: false
             };
             
@@ -224,7 +225,7 @@ class DecibelMeter {
                     this.disconnect();
                 }
             }
-        }, 100); // Update every 100ms for smooth animation
+        }, 200); // Update every 100ms for smooth animation
     }
     
     stopPolling() {
@@ -304,7 +305,7 @@ class DecibelMeter {
         
         // Update colors based on SPL level
         const colorClass = this.getColorClass(this.currentSpl);
-        this.meterProgress.className = `meter-progress ${colorClass}`;
+        this.meterProgress.setAttribute('class', `meter-progress ${colorClass}`);
     }
     
     showError(message) {
