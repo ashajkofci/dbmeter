@@ -1,0 +1,32 @@
+{
+  "name": "decibel-meter-web",
+  "version": "1.0.0",
+  "description": "Full-screen web application for displaying real-time decibel measurements from Room EQ Wizard",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 server.py --browser",
+    "serve": "python3 server.py",
+    "demo": "python3 -m http.server 8080 --directory .",
+    "test": "echo 'Open http://localhost:8080?demo=true for demo mode'"
+  },
+  "keywords": [
+    "decibel",
+    "meter",
+    "spl",
+    "sound",
+    "measurement",
+    "rew",
+    "room-eq-wizard",
+    "web-app"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/decibel-meter-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/decibel-meter-web/issues"
+  },
+  "homepage": "https://github.com/yourusername/decibel-meter-web#readme"
+}
