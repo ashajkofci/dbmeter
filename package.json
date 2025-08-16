@@ -6,8 +6,8 @@
   "scripts": {
     "start": "python3 server.py --browser",
     "serve": "python3 server.py",
-    "demo": "python3 -m http.server 8080 --directory .",
-    "test": "echo 'Open http://localhost:8080?demo=true for demo mode'"
+    "demo": "python3 server.py --demo --browser",
+    "test": "echo 'Run npm run demo for demo mode'"
   },
   "keywords": [
     "decibel",

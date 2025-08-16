@@ -21,6 +21,24 @@ A full-screen web application for displaying real-time decibel measurements from
 
 ## Setup
 
+### Run the Python Web Server
+
+- **Normal mode:**  
+  `python server.py`
+
+- **Demo mode (serves fake REW API data on port 8081):**  
+  `python server.py --demo`
+
+  - The main web server runs on port 8080.
+  - The demo REW API server runs on port 8081 and responds to `/rew/api/levels` with mock SPL data:
+    ```json
+    {
+      "level": 70.5,
+      "peak": 85.0,
+      "rms": 68.2
+    }
+    ```
+
 1. **Start REW with API enabled:**
    - On Windows: `"C:\Program Files\REW\roomeqwizard.exe" -api`
    - On macOS: `open -a REW.app --args -api`
