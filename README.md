@@ -68,7 +68,9 @@ that the tag exactly matches the version in `package.json`, builds on the
 matching operating system, and publishes a GitHub release only after both
 signed jobs succeed.
 
-Configure these repository Actions secrets:
+Create a protected GitHub Actions environment named `release-signing`, add
+required reviewers, limit deployment to protected release tags, and configure
+these environment secrets:
 
 | Secret | Purpose |
 | --- | --- |
@@ -80,11 +82,17 @@ Configure these repository Actions secrets:
 | `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for that Apple ID |
 | `APPLE_TEAM_ID` | Apple Developer team identifier |
 
-Keep signing credentials in GitHub Actions secrets; never add certificate
+Keep signing credentials in the protected environment; never add certificate
 files or passwords to the repository. Protect release tags and restrict who
-can modify Actions workflows in the repository settings.
+can modify Actions workflows in the repository settings. The workflow pins
+third-party action execution to reviewed commit SHAs.
 
-To publish version `1.1.0`:
+To publish version `1.1.0`, update and merge the version in `package.json`,
+then open **Actions → Release desktop apps → Run workflow** on `main` and enter
+`1.1.0`. After the protected-environment approval, the workflow creates the
+`v1.1.0` tag and GitHub release.
+
+Alternatively, push a release tag:
 
 ```bash
 git tag -s v1.1.0 -m "Acro dB Meter 1.1.0"
