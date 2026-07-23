@@ -87,12 +87,14 @@ files or passwords to the repository. Protect release tags and restrict who
 can modify Actions workflows in the repository settings. The workflow pins
 third-party action execution to reviewed commit SHAs.
 
-To publish version `1.1.0`, update and merge the version in `package.json`,
-then open **Actions → Release desktop apps → Run workflow** on `main` and enter
-`1.1.0`. After the protected-environment approval, the workflow creates the
-`v1.1.0` tag and GitHub release.
+To publish a version such as `1.1.0`, open
+**Actions → Release desktop apps → Run workflow** on `main` and enter `1.1.0`.
+The manual workflow applies that version to both packages without modifying the
+repository. After the protected-environment approval, it creates the `v1.1.0`
+tag and GitHub release.
 
-Alternatively, push a release tag:
+Alternatively, update the version in `package.json` and push a matching release
+tag:
 
 ```bash
 git tag -s v1.1.0 -m "Acro dB Meter 1.1.0"
