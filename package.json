@@ -1,13 +1,15 @@
 {
-  "name": "decibel-meter-web",
-  "version": "1.0.0",
-  "description": "Full-screen web application for displaying real-time decibel measurements from Room EQ Wizard",
-  "main": "index.html",
+  "name": "acro-db-meter",
+  "version": "1.1.0",
+  "description": "Desktop sound pressure level meter for Room EQ Wizard",
+  "main": "main.js",
   "scripts": {
-    "start": "python3 server.py --browser",
-    "serve": "python3 server.py",
+    "start": "electron .",
+    "start:web": "python3 server.py --browser",
     "demo": "python3 server.py --demo --browser",
-    "test": "echo 'Run npm run demo for demo mode'"
+    "test": "node tests/meter-core.test.js && node tests/security.test.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish never"
   },
   "keywords": [
     "decibel",
@@ -16,17 +18,90 @@
     "sound",
     "measurement",
     "rew",
-    "room-eq-wizard",
-    "web-app"
+    "room-eq-wizard"
   ],
-  "author": "Your Name",
+  "author": "Adrian Shajkofci",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/decibel-meter-web.git"
+    "url": "https://github.com/ashajkofci/dbmeter.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/decibel-meter-web/issues"
+    "url": "https://github.com/ashajkofci/dbmeter/issues"
   },
-  "homepage": "https://github.com/yourusername/decibel-meter-web#readme"
+  "homepage": "https://github.com/ashajkofci/dbmeter#readme",
+  "devDependencies": {
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.acro.dbmeter",
+    "productName": "Acro dB Meter",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "asar": true,
+    "compression": "maximum",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "acro.png",
+      "app.js",
+      "index.html",
+      "main.js",
+      "meter-core.js",
+      "preload.js",
+      "styles.css"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": true,
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "signAndEditExecutable": true,
+      "verifyUpdateCodeSignature": true
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Acro dB Meter"
+    }
+  }
 }

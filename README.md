@@ -1,176 +1,128 @@
-# Decibel Meter Web Application
+# Acro dB Meter
 
-A full-screen web application for displaying real-time decibel measurements from Room EQ Wizard (REW) with an analog-style meter interface.
+Acro dB Meter is a desktop sound pressure level display for
+[Room EQ Wizard (REW)](https://www.roomeqwizard.com/). It shows the live
+A-weighted, slow SPL value and can calculate an average over a period selected
+with a button or the Space key.
+
+![Acro dB Meter logo](acro.png)
 
 ## Features
 
-- **Full-screen analog meter display** with animated needle and progress arc
-- **Real-time SPL readings** from REW API (40-100 dB range)
-- **Average calculation** between two user-defined points
-- **Keyboard control** - Press SPACE to start/stop recording for average calculation
-- **Color-coded levels** - Safe (green), Moderate (yellow), High (orange), Dangerous (red)
-- **Modern responsive design** with smooth animations
-- **Error handling** and connection status indicators
+- Native Windows and macOS packages
+- Live 60–100 dB analog and digital display
+- Start/stop averaging without retaining an unbounded sample history
+- Automatic connection-loss detection and manual reconnection
+- Built-in demo mode for browser-based testing
+- Keyboard controls, responsive layout, and reduced-motion support
+- Isolated desktop renderer with an allowlisted localhost-only REW bridge
 
-## Prerequisites
+## Use the desktop app
 
-- Room EQ Wizard (REW) installed and running
-- REW API enabled on port 4735 (default)
-- Modern web browser with JavaScript enabled
-- Audio input device connected to your system
+1. Start REW and enable its API on the default port, `4735`.
+2. Install and open Acro dB Meter.
+3. The app connects automatically. Use **Reconnect** if REW was started later.
+4. Select **Record average**, or press Space, to start and stop an average.
 
-## Setup
+REW can also be launched with its API enabled:
 
-### Run the Python Web Server
+- Windows: `"C:\Program Files\REW\roomeqwizard.exe" -api`
+- macOS: `open -a REW.app --args -api`
 
-- **Normal mode:**  
-  `python server.py`
+## Develop
 
-- **Demo mode (serves fake REW API data on port 8081):**  
-  `python server.py --demo`
+Requirements:
 
-  - The main web server runs on port 8080.
-  - The demo REW API server runs on port 8081 and responds to `/rew/api/levels` with mock SPL data:
-    ```json
-    {
-      "level": 70.5,
-      "peak": 85.0,
-      "rms": 68.2
-    }
-    ```
+- Node.js 22 or later
+- Python 3.9 or later (only for browser/demo mode)
 
-1. **Start REW with API enabled:**
-   - On Windows: `"C:\Program Files\REW\roomeqwizard.exe" -api`
-   - On macOS: `open -a REW.app --args -api`
-   - Or use the API button in REW preferences
-
-2. **Open the web application:**
-   - Open `index.html` in your web browser
-   - For demo mode (without REW): `index.html?demo=true`
-
-3. **Connect and use:**
-   - Click "Connect to REW" button
-   - The meter will start displaying real-time SPL readings
-   - Press SPACE to start/stop recording for average calculations
-
-## Usage
-
-### Basic Operation
-- The meter automatically displays current SPL readings from REW
-- Needle and arc progress indicate the current decibel level
-- Digital display shows precise numerical values
-
-### Recording Averages
-1. Press **SPACE** to start recording
-2. Recording indicator will turn red and pulse
-3. Press **SPACE** again to stop recording
-4. Average of recorded values will be displayed
-
-### Color Coding
-- **Green (0-60 dB)**: Safe levels
-- **Yellow (60-75 dB)**: Moderate levels  
-- **Orange (75-90 dB)**: High levels
-- **Red (90+ dB)**: Dangerous levels
-
-## Architecture
-
-The application follows modern web development best practices:
-
-### HTML Structure
-- Semantic HTML5 with proper accessibility considerations
-- SVG-based meter for scalable vector graphics
-- Responsive viewport configuration
-
-### CSS Architecture
-- CSS Grid and Flexbox for layout
-- CSS custom properties for theming
-- Responsive design with media queries
-- Hardware-accelerated animations using transforms
-- CSS gradients and filters for visual effects
-
-### JavaScript Architecture
-- ES6+ class-based architecture
-- Async/await for API calls
-- Event-driven programming
-- Error handling and graceful degradation
-- Modular design with separation of concerns
-
-### Key Classes and Methods
-
-#### `DecibelMeter` Class
-- `connect()` - Establishes connection to REW API
-- `startSplMeter()` - Configures and starts REW SPL meter
-- `startPolling()` - Polls for real-time SPL data
-- `toggleRecording()` - Handles recording state for averages
-- `updateDisplay()` - Updates all visual elements
-- `dbToAngle()` - Converts dB values to needle angles
-
-## API Integration
-
-The application integrates with the Room EQ Wizard API:
-
-### Endpoints Used
-- `GET /application` - Health check and connection test
-- `PUT /spl-meter/1/configuration` - Configure SPL meter settings
-- `POST /spl-meter/1/command` - Start/stop SPL meter
-- `GET /spl-meter/1/levels` - Retrieve current SPL readings
-
-### Configuration
-```javascript
-{
-  mode: 'SPL',
-  weighting: 'C',
-  filter: 'Fast',
-  highPassActive: false,
-  rollingLeqActive: false
-}
+```bash
+npm ci
+npm test
+npm start
 ```
 
-## Files Structure
+The desktop app talks only to `http://127.0.0.1:4735`. To preview the web
+version against a local mock API instead:
 
-```
-├── index.html          # Main HTML structure
-├── styles.css          # Styling and animations
-├── app.js             # JavaScript application logic
-└── README.md          # Documentation
+```bash
+npm run demo
 ```
 
-## Browser Compatibility
+The demo opens at `http://127.0.0.1:8080/?demo=true`. The Python server binds
+only to loopback and applies restrictive browser security headers.
 
-- Chrome 60+
-- Firefox 55+
-- Safari 12+
-- Edge 79+
+Local, unsigned packages can be created for development with:
+
+```bash
+npm run pack
+```
+
+Do not distribute those development packages. Official tagged releases are
+signed and, on macOS, notarized.
+
+## Release Windows and macOS builds
+
+The release workflow runs only for a version tag. It tests the project, checks
+that the tag exactly matches the version in `package.json`, builds on the
+matching operating system, and publishes a GitHub release only after both
+signed jobs succeed.
+
+Configure these repository Actions secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `WINDOWS_CERTIFICATE` | Base64-encoded `.pfx` code-signing certificate, or another `CSC_LINK` value supported by electron-builder |
+| `WINDOWS_CERTIFICATE_PASSWORD` | Password for the Windows certificate |
+| `MACOS_CERTIFICATE` | Base64-encoded Developer ID Application `.p12` certificate |
+| `MACOS_CERTIFICATE_PASSWORD` | Password for the macOS certificate |
+| `APPLE_ID` | Apple ID used for notarization |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for that Apple ID |
+| `APPLE_TEAM_ID` | Apple Developer team identifier |
+
+Keep signing credentials in GitHub Actions secrets; never add certificate
+files or passwords to the repository. Protect release tags and restrict who
+can modify Actions workflows in the repository settings.
+
+To publish version `1.1.0`:
+
+```bash
+git tag -s v1.1.0 -m "Acro dB Meter 1.1.0"
+git push origin v1.1.0
+```
+
+An annotated tag also works when GPG tag signing is not configured. The
+workflow deliberately stops if any signing or notarization secret is absent,
+so it cannot publish an unsigned release by mistake.
+
+## Security design
+
+- Electron uses context isolation, renderer sandboxing, and no Node.js
+  integration.
+- The preload bridge exposes one operation. The main process accepts only the
+  four REW routes and methods required by the app.
+- Navigation, popups, webviews, redirects, and Electron permission requests
+  are denied.
+- A Content Security Policy prevents inline scripts, remote resources, plugins,
+  forms, and framing.
+- REW responses have time and size limits and must contain valid JSON.
+- Release jobs have read-only permissions except for the final publishing job,
+  which receives only `contents: write`.
 
 ## Troubleshooting
 
-### Connection Issues
-1. Ensure REW is running and API is enabled
-2. Check that REW API is on port 4735 (default)
-3. Verify no firewall is blocking localhost connections
-4. Try demo mode to test the interface: `index.html?demo=true`
+If the app shows **Offline**:
 
-### Performance Issues
-1. Close unnecessary browser tabs
-2. Check that your system has adequate resources
-3. Ensure audio drivers are properly installed
+1. Confirm REW is running and its API is enabled.
+2. Confirm the API is using port `4735`.
+3. Select **Reconnect**.
+4. Use `npm run demo` to separate an REW/API problem from a display problem.
 
-### Display Issues
-1. Ensure JavaScript is enabled in your browser
-2. Try refreshing the page (F5 or Ctrl+R)
-3. Check browser developer console for errors (F12)
-
-## Development
-
-To modify or extend the application:
-
-1. **Add new features:** Extend the `DecibelMeter` class
-2. **Styling changes:** Modify `styles.css` with CSS custom properties
-3. **Layout changes:** Update the HTML structure in `index.html`
-
-### Adding New Meter Types
-The application can be extended to support other REW meter types by modifying the API configuration in `startSplMeter()` method.
+The macOS release must report a valid Developer ID signature and notarization
+ticket. Windows may still show a reputation warning for a new publisher until
+SmartScreen reputation is established, even when the executable is correctly
+signed.
 
 ## License
 
-This project is open source. Feel free to modify and distribute according to your needs.
+MIT

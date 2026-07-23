@@ -1,114 +1,137 @@
 #!/usr/bin/env python3
-"""
-Simple HTTP server for the Decibel Meter web application.
-This server handles CORS issues that may occur when accessing the REW API from a file:// URL.
-"""
+"""Local web and demo API server for Acro dB Meter."""
 
+import argparse
+import functools
 import http.server
-import socketserver
-import webbrowser
-import sys
-from pathlib import Path
-import threading
 import json
+import random
+import threading
+import webbrowser
+from pathlib import Path
 
-class CORSHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    """HTTP request handler with CORS headers to allow API calls to REW."""
-    
+HOST = "127.0.0.1"
+DEFAULT_WEB_PORT = 8080
+DEFAULT_REW_PORT = 4735
+ALLOWED_DEMO_ORIGINS = {
+    f"http://127.0.0.1:{DEFAULT_WEB_PORT}",
+    f"http://localhost:{DEFAULT_WEB_PORT}",
+}
+
+
+class ReusableThreadingHTTPServer(http.server.ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+class WebRequestHandler(http.server.SimpleHTTPRequestHandler):
+    """Serve only the application directory with defensive browser headers."""
+
     def end_headers(self):
-        """Add CORS headers to all responses."""
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Accept')
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; img-src 'self' data:; style-src 'self'; "
+            "script-src 'self'; connect-src http://127.0.0.1:* http://localhost:*; "
+            "object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+        )
         super().end_headers()
-    
+
+
+class RewDemoHandler(http.server.BaseHTTPRequestHandler):
+    """Implement only the small REW API subset used by the app."""
+
+    server_version = "AcroRewDemo/1.0"
+
+    def _add_cors_headers(self):
+        origin = self.headers.get("Origin")
+        if origin in ALLOWED_DEMO_ORIGINS:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
+
+    def _send_json(self, status, payload):
+        encoded = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(encoded)))
+        self._add_cors_headers()
+        self.end_headers()
+        self.wfile.write(encoded)
+
     def do_OPTIONS(self):
-        """Handle preflight OPTIONS requests."""
-        self.send_response(200)
+        self.send_response(204)
+        self._add_cors_headers()
         self.end_headers()
 
-def run_rew_demo_server(host, port):
-    class REWDemoHandler(http.server.BaseHTTPRequestHandler):
-        def end_headers(self):
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Accept')
-            super().end_headers()
+    def do_GET(self):
+        if self.path == "/spl-meter/1/levels":
+            self._send_json(200, {"spl": round(80 + random.uniform(0, 4), 1)})
+        elif self.path == "/spl-meter/commands":
+            self._send_json(200, {"commands": ["Start", "Stop"]})
+        else:
+            self._send_json(404, {"error": "Not found"})
 
-        def do_OPTIONS(self):
-            self.send_response(200)
-            self.end_headers()
+    def do_PUT(self):
+        if self.path == "/spl-meter/1/configuration":
+            self._send_json(200, {"message": "Configured"})
+        else:
+            self._send_json(404, {"error": "Not found"})
 
-        def do_GET(self):
-            # Return fake data for /spl-meter/1/levels
-            if self.path.startswith("/spl-meter/1/levels"):
-                import random
-                spl_value = 80 + random.uniform(0, 4)
-                fake_data = {"spl": round(spl_value, 1)}
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps(fake_data).encode())
-            # Return dummy response for /spl-meter/commands
-            elif self.path.startswith("/spl-meter/commands"):
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"commands": ["Start", "Stop"]}).encode())
-            else:
-                self.send_response(404)
-                self.end_headers()
+    def do_POST(self):
+        if self.path == "/spl-meter/1/command":
+            self._send_json(200, {"message": "OK"})
+        else:
+            self._send_json(404, {"error": "Not found"})
 
-    with socketserver.TCPServer((host, port), REWDemoHandler) as rew_server:
-        print(f"Demo REW API Server serving at http://{host}:{port}")
-        try:
-            rew_server.serve_forever()
-        except KeyboardInterrupt:
-            print("\nShutting down REW demo server...")
+    def log_message(self, format_string, *args):
+        return
+
+
+def run_demo_server(port):
+    with ReusableThreadingHTTPServer((HOST, port), RewDemoHandler) as server:
+        print(f"Demo REW API: http://{HOST}:{port}")
+        server.serve_forever()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--browser", action="store_true", help="open the app in the default browser")
+    parser.add_argument("--demo", action="store_true", help="run a local mock REW API")
+    parser.add_argument("--port", type=int, default=DEFAULT_WEB_PORT, help="web server port")
+    return parser.parse_args()
+
 
 def main():
-    """Start the HTTP server and optionally open the web browser."""
-    # Configuration
-    PORT = 8080
-    HOST = 'localhost'
-    REW_PORT = 4735
+    args = parse_args()
+    web_directory = Path(__file__).resolve().parent
 
-    demo_mode = '--demo' in sys.argv
+    if args.demo:
+        demo_thread = threading.Thread(
+            target=run_demo_server,
+            args=(DEFAULT_REW_PORT,),
+            daemon=True,
+        )
+        demo_thread.start()
 
-    # Change to the directory containing the web files
-    web_dir = Path(__file__).parent
-    if web_dir.exists():
-        import os
-        os.chdir(web_dir)
+    handler = functools.partial(WebRequestHandler, directory=str(web_directory))
+    with ReusableThreadingHTTPServer((HOST, args.port), handler) as server:
+        query = "?demo=true" if args.demo else ""
+        app_url = f"http://{HOST}:{args.port}/{query}"
+        print(f"Acro dB Meter: {app_url}")
+        print("Press Ctrl+C to stop.")
 
-    # Start REW demo server in a thread if demo mode
-    if demo_mode:
-        rew_thread = threading.Thread(target=run_rew_demo_server, args=(HOST, REW_PORT), daemon=True)
-        rew_thread.start()
-
-    # Create and configure the main server
-    with socketserver.TCPServer((HOST, PORT), CORSHTTPRequestHandler) as httpd:
-        print(f"Decibel Meter Web Server")
-        print(f"Serving at http://{HOST}:{PORT}")
-        print(f"Directory: {Path.cwd()}")
-        if demo_mode:
-            print(f"Demo mode enabled. REW API server at http://{HOST}:{REW_PORT}")
-        print()
-        print("Make sure Room EQ Wizard is running with API enabled:")
-        print("  Windows: roomeqwizard.exe -api")
-        print("  macOS:   open -a REW.app --args -api")
-        print()
-        print("Press Ctrl+C to stop the server")
-        print("-" * 50)
-
-        # Optionally open the browser
-        if '--browser' in sys.argv:
-            webbrowser.open(f'http://{HOST}:{PORT}')
+        if args.browser:
+            webbrowser.open(app_url)
 
         try:
-            httpd.serve_forever()
+            server.serve_forever()
         except KeyboardInterrupt:
-            print("\nShutting down server...")
+            print("\nShutting down.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

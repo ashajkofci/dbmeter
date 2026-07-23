@@ -3,69 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Decibel Meter</title>
-    <meta name="description" content="Full-screen decibel meter web application for real-time SPL measurements from Room EQ Wizard">
-    <meta name="author" content="Decibel Meter App">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23333' stroke='%2300ff00' stroke-width='4'/%3E%3Cpath d='M20 50 L80 50' stroke='%23ff0000' stroke-width='3' transform='rotate(45 50 50)'/%3E%3C/svg%3E">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src http://127.0.0.1:* http://localhost:*; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+    <title>Acro dB Meter</title>
+    <meta name="description" content="Real-time SPL measurements from Room EQ Wizard">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23151b2b' stroke='%23f5a54d' stroke-width='5'/%3E%3Cpath d='M20 65 A35 35 0 0 1 80 65' fill='none' stroke='%23f5a54d' stroke-width='6'/%3E%3Cpath d='M50 65 L74 39' stroke='%23ff5b5b' stroke-width='5'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+    <main class="container">
         <img src="acro.png" alt="Acro" class="title-logo">
-        <div class="meter-container">
-            <svg class="meter-svg" viewBox="0 130 600 250" xmlns="http://www.w3.org/2000/svg">
-                <!-- Meter Background Arc (semicircle from 180 to 0 degrees) -->
-                <path id="meter-background" class="meter-background" 
-                      d="M 150 300 A 150 150 0 0 1 450 300" 
-                      fill="none" 
-                      stroke="#2a2a2a" 
-                      stroke-width="20"/>
-                
-                <!-- Meter Progress Arc -->
-                <path id="meter-progress" class="meter-progress" 
-                      d="M 150 300 A 150 150 0 0 1 450 300" 
-                      fill="none" 
-                      stroke="#00ff00" 
-                      stroke-width="20"
-                      stroke-dasharray="471.239" 
-                      stroke-dashoffset="471.239"/>
-                
-                <!-- Scale Markings -->
+
+        <section class="meter-container" aria-label="Sound pressure level meter">
+            <svg class="meter-svg" viewBox="0 130 600 250" role="img" aria-labelledby="meter-title">
+                <title id="meter-title">Current sound pressure level from 60 to 100 decibels</title>
+                <path class="meter-background" d="M 150 300 A 150 150 0 0 1 450 300"/>
+                <path id="meter-progress" class="meter-progress meter-idle"
+                      d="M 150 300 A 150 150 0 0 1 450 300"
+                      stroke-dasharray="471.239" stroke-dashoffset="471.239"/>
                 <g id="scale-markings" class="scale-markings"></g>
-                
-                <!-- Needle -->
                 <g id="needle" class="needle" transform="rotate(0 300 300)">
-                    <rect x="180" y="296" width="120" height="8" 
-                          fill="#ff0000" stroke="#ff0000"/>
+                    <rect x="180" y="296" width="120" height="8" rx="4"/>
                 </g>
-                
-                <!-- Center dot -->
-                <circle cx="300" cy="300" r="10" fill="#333"/>
-                
-                <!-- Digital display - now shows AVERAGE -->
-                <rect x="225" y="315" width="150" height="45" fill="#000" stroke="#666" stroke-width="2" rx="8"/>
-                <text id="digital-display" x="300" y="350" text-anchor="middle" fill="#f5a54d" font-family="monospace" font-size="28">-- dB</text>
+                <circle class="needle-pin" cx="300" cy="300" r="11"/>
+                <rect class="digital-panel" x="215" y="315" width="170" height="45" rx="8"/>
+                <text id="digital-display" x="300" y="347" text-anchor="middle">-- dB</text>
             </svg>
-            
-            <div class="status-display">
+
+            <div class="status-display" aria-live="polite">
                 <div class="status-item">
-                    <span class="status-label">Current:</span>
-                    <span id="current-spl" class="status-value">81.6 dB</span>
+                    <span class="status-label">Connection</span>
+                    <span id="connection-status" class="status-value connection-connecting">CONNECTING…</span>
                 </div>
                 <div class="status-item">
-                    <span class="status-label">Average:</span>
+                    <span class="status-label">Current</span>
+                    <span id="current-spl" class="status-value">-- dB</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Average</span>
                     <span id="average-spl" class="status-value">-- dB</span>
                 </div>
                 <div class="status-item">
-                    <span class="status-label">Recording:</span>
+                    <span class="status-label">Recording</span>
                     <span id="recording-status" class="status-value recording-off">OFF</span>
                 </div>
             </div>
+        </section>
+
+        <div class="controls">
+            <button id="connect-button" class="btn btn-secondary" type="button" disabled>Connecting…</button>
+            <button id="record-button" class="btn btn-primary" type="button" disabled>Record average</button>
         </div>
-        
-        <div class="error-message" id="error-message"></div>
-    </div>
-    
+        <p class="help-text">Press <kbd>Space</kbd> to start or stop an average.</p>
+        <div class="error-message" id="error-message" role="alert"></div>
+    </main>
+
+    <script src="meter-core.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
