@@ -148,7 +148,7 @@ jobs:
         if: env.SIGNED_RELEASE != 'true'
         shell: pwsh
         run: |
-          Get-ChildItem -Path "dist/*.exe", "dist/*.zip" | ForEach-Object {
+          Get-ChildItem -Path "dist/*.exe" | ForEach-Object {
             Rename-Item -Path $_.FullName -NewName "$($_.BaseName)-UNSIGNED$($_.Extension)"
           }
 
@@ -156,18 +156,20 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows
-          path: |
-            dist/*.exe
-            dist/*.zip
+          path: dist/*.exe
           if-no-files-found: error
           retention-days: 7
 
   macos:
-    name: Signed and notarized macOS build
+    name: macOS ${{ matrix.arch }}
     needs: validate
     runs-on: macos-latest
     timeout-minutes: 45
     environment: release-signing
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
     env:
       CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
       CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -210,7 +212,7 @@ jobs:
 
       - name: Build, sign, and notarize
         if: env.SIGNED_RELEASE == 'true'
-        run: npm run dist -- --mac
+        run: npm run dist -- --mac --${{ matrix.arch }}
 
       - name: Build unsigned packages
         if: env.SIGNED_RELEASE != 'true'
@@ -222,14 +224,19 @@ jobs:
           unset APPLE_APP_SPECIFIC_PASSWORD
           unset APPLE_TEAM_ID
           export CSC_IDENTITY_AUTO_DISCOVERY=false
-          npm run dist -- --mac --config.mac.notarize=false
+          npm run dist -- --mac --${{ matrix.arch }} --config.mac.notarize=false
 
       - name: Verify signatures, notarization, and Gatekeeper acceptance
         if: env.SIGNED_RELEASE == 'true'
         shell: bash
         run: |
-          codesign --verify --deep --strict --verbose=2 "dist/mac-universal/Acro dB Meter.app"
-          spctl --assess --type execute --verbose=2 "dist/mac-universal/Acro dB Meter.app"
+          app_path="$(find dist -maxdepth 2 -type d -name 'Acro dB Meter.app' -print -quit)"
+          if [[ -z "$app_path" ]]; then
+            echo "::error::Packaged macOS application was not found."
+            exit 1
+          fi
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          spctl --assess --type execute --verbose=2 "$app_path"
           xcrun stapler validate dist/*.dmg
           spctl --assess --type open --context context:primary-signature --verbose dist/*.dmg
 
@@ -237,17 +244,15 @@ jobs:
         if: env.SIGNED_RELEASE != 'true'
         shell: bash
         run: |
-          for artifact in dist/*.dmg dist/*.zip; do
+          for artifact in dist/*.dmg; do
             mv "$artifact" "${artifact%.*}-UNSIGNED.${artifact##*.}"
           done
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: macos
-          path: |
-            dist/*.dmg
-            dist/*.zip
+          name: macos-${{ matrix.arch }}
+          path: dist/*.dmg
           if-no-files-found: error
           retention-days: 7
 

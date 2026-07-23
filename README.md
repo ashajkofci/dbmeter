@@ -10,6 +10,7 @@ with a button or the Space key.
 ## Features
 
 - Native Windows and macOS packages
+- Separate Intel and Apple Silicon macOS downloads, without duplicate archives
 - Live 60–100 dB analog and digital display
 - Start/stop averaging without retaining an unbounded sample history
 - Automatic connection-loss detection and manual reconnection
@@ -63,10 +64,11 @@ signed and, on macOS, notarized.
 
 ## Release Windows and macOS builds
 
-The release workflow runs only for a version tag. It tests the project, checks
-that the tag exactly matches the version in `package.json`, builds on the
-matching operating system, and publishes a GitHub release only after both
-signed jobs succeed.
+The release workflow runs for a version tag or from its manual button. It tests
+the project, builds one Windows installer plus separate Intel and Apple Silicon
+macOS DMGs, and publishes a GitHub release only after all platform jobs
+succeed. Redundant ZIP copies and a double-size universal macOS bundle are
+deliberately omitted.
 
 Create a protected GitHub Actions environment named `release-signing`, add
 required reviewers, limit deployment to protected release tags, and configure

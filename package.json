@@ -59,18 +59,7 @@
     "mac": {
       "category": "public.app-category.utilities",
       "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "universal"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "universal"
-          ]
-        }
+        "dmg"
       ],
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
@@ -83,12 +72,6 @@
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "zip",
           "arch": [
             "x64"
           ]

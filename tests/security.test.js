@@ -22,6 +22,9 @@ assert.match(html, /Content-Security-Policy/);
 assert.match(html, /object-src 'none'/);
 assert.equal(packageManifest.build.mac.hardenedRuntime, true);
 assert.equal(packageManifest.build.mac.notarize, true);
+assert.deepEqual(packageManifest.build.mac.target, ['dmg']);
+assert.equal(packageManifest.build.win.target.length, 1);
+assert.equal(packageManifest.build.win.target[0].target, 'nsis');
 assert.equal(packageManifest.build.win.signAndEditExecutable, true);
 assert.match(releaseWorkflow, /workflow_dispatch:/);
 assert.match(releaseWorkflow, /environment: release-signing/);
@@ -35,6 +38,8 @@ assert.match(releaseWorkflow, /No self-signed certificate was used/);
 assert.match(releaseWorkflow, /Remove-Item Env:CSC_LINK/);
 assert.match(releaseWorkflow, /unset CSC_LINK/);
 assert.match(releaseWorkflow, /--config\.win\.signExecutable=false/);
+assert.match(releaseWorkflow, /arch: \[x64, arm64\]/);
+assert.match(releaseWorkflow, /name: macos-\$\{\{ matrix\.arch \}\}/);
 assert.equal(packageManifest.build.compression, 'normal');
 assert.doesNotMatch(releaseWorkflow, /uses:\s+\S+@v\d/);
 
