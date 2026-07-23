@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('node:path');
-const { app, BrowserWindow, ipcMain, net, session } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, net, session } = require('electron');
 
 const REW_ORIGIN = 'http://127.0.0.1:4735';
 const MAX_RESPONSE_BYTES = 64 * 1024;
@@ -70,6 +70,23 @@ async function requestRew(request) {
     }
 }
 
+function toggleFullScreen(window) {
+    window.setFullScreen(!window.isFullScreen());
+}
+
+function showWindowContextMenu(window) {
+    const isFullScreen = window.isFullScreen();
+    const menu = Menu.buildFromTemplate([
+        {
+            label: isFullScreen ? 'Exit Full Screen' : 'Enter Full Screen',
+            type: 'checkbox',
+            checked: isFullScreen,
+            click: () => toggleFullScreen(window)
+        }
+    ]);
+    menu.popup({ window });
+}
+
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1100,
@@ -93,6 +110,21 @@ function createWindow() {
     mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
     mainWindow.webContents.on('will-attach-webview', (event) => event.preventDefault());
+    mainWindow.webContents.on('context-menu', () => showWindowContextMenu(mainWindow));
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        const isKeyDown = input.type === 'keyDown';
+        const isFullScreenShortcut = input.key === 'F11' || input.key === 'Escape';
+        if (isKeyDown && isFullScreenShortcut) {
+            event.preventDefault();
+            toggleFullScreen(mainWindow);
+        }
+    });
+    mainWindow.on('enter-full-screen', () => {
+        mainWindow.webContents.send('window:full-screen-changed', true);
+    });
+    mainWindow.on('leave-full-screen', () => {
+        mainWindow.webContents.send('window:full-screen-changed', false);
+    });
     mainWindow.once('ready-to-show', () => mainWindow.show());
     mainWindow.on('closed', () => {
         mainWindow = null;

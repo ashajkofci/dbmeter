@@ -10,12 +10,14 @@ with a button or the Space key.
 ## Features
 
 - Native Windows and macOS packages
+- Windows installer plus a single-file portable executable
 - Separate Intel and Apple Silicon macOS downloads, without duplicate archives
 - Live 60–100 dB analog and digital display
 - Start/stop averaging without retaining an unbounded sample history
 - Automatic connection-loss detection and manual reconnection
 - Built-in demo mode for browser-based testing
 - Keyboard controls, responsive layout, and reduced-motion support
+- Native right-click menu for borderless full screen on Windows and macOS
 - Isolated desktop renderer with an allowlisted localhost-only REW bridge
 
 ## Use the desktop app
@@ -24,6 +26,8 @@ with a button or the Space key.
 2. Install and open Acro dB Meter.
 3. The app connects automatically. Use **Reconnect** if REW was started later.
 4. Select **Record average**, or press Space, to start and stop an average.
+5. Right-click anywhere and select **Enter Full Screen** for a borderless
+   display. Escape and F11 also toggle full screen on and off.
 
 REW can also be launched with its API enabled:
 
@@ -65,10 +69,10 @@ signed and, on macOS, notarized.
 ## Release Windows and macOS builds
 
 The release workflow runs for a version tag or from its manual button. It tests
-the project, builds one Windows installer plus separate Intel and Apple Silicon
-macOS DMGs, and publishes a GitHub release only after all platform jobs
-succeed. Redundant ZIP copies and a double-size universal macOS bundle are
-deliberately omitted.
+the project, builds a Windows installer and single-file portable executable
+plus separate Intel and Apple Silicon macOS DMGs, and publishes a GitHub
+release only after all platform jobs succeed. Redundant ZIP copies and a
+double-size universal macOS bundle are deliberately omitted.
 
 Create a protected GitHub Actions environment named `release-signing`, add
 required reviewers, limit deployment to protected release tags, and configure

@@ -51,6 +51,12 @@ class DecibelMeter {
             }
         });
 
+        if (window.desktopApi) {
+            window.desktopApi.onFullScreenChange((isFullScreen) => {
+                document.body.classList.toggle('is-full-screen', isFullScreen);
+            });
+        }
+
         window.addEventListener('beforeunload', () => this.stopPolling());
     }
 

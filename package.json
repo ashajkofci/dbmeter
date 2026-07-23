@@ -43,6 +43,10 @@
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "asar": true,
     "compression": "normal",
+    "electronLanguages": [
+      "en-US",
+      "en-GB"
+    ],
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -75,6 +79,12 @@
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.png",
@@ -82,12 +92,16 @@
       "verifyUpdateCodeSignature": true
     },
     "nsis": {
+      "artifactName": "${productName}-${version}-windows-${arch}-setup.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Acro dB Meter"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-windows-${arch}-portable.${ext}"
     }
   }
 }

@@ -251,6 +251,10 @@ kbd {
     font-size: 0.85rem;
 }
 
+.is-full-screen .help-text {
+    display: none;
+}
+
 kbd {
     padding: 0.1rem 0.38rem;
     border: 1px solid #515a6d;

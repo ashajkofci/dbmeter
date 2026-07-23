@@ -133,8 +133,8 @@ jobs:
             Get-ChildItem -Path dist -File -Filter *.exe
             Get-Item -Path "dist/win-unpacked/Acro dB Meter.exe"
           )
-          if ($targets.Count -lt 2) {
-            throw "Expected the signed app and installer."
+          if ($targets.Count -lt 3) {
+            throw "Expected the signed app, installer, and portable executable."
           }
           foreach ($target in $targets) {
             $signature = Get-AuthenticodeSignature -FilePath $target.FullName
