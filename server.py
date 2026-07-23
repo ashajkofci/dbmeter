@@ -13,12 +13,6 @@ from pathlib import Path
 HOST = "127.0.0.1"
 DEFAULT_WEB_PORT = 8080
 DEFAULT_REW_PORT = 4735
-ALLOWED_DEMO_ORIGINS = {
-    f"http://127.0.0.1:{DEFAULT_WEB_PORT}",
-    f"http://localhost:{DEFAULT_WEB_PORT}",
-}
-
-
 class ReusableThreadingHTTPServer(http.server.ThreadingHTTPServer):
     allow_reuse_address = True
     daemon_threads = True
@@ -47,7 +41,7 @@ class RewDemoHandler(http.server.BaseHTTPRequestHandler):
 
     def _add_cors_headers(self):
         origin = self.headers.get("Origin")
-        if origin in ALLOWED_DEMO_ORIGINS:
+        if origin in self.server.allowed_origins:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
@@ -91,8 +85,12 @@ class RewDemoHandler(http.server.BaseHTTPRequestHandler):
         return
 
 
-def run_demo_server(port):
+def run_demo_server(port, web_port):
     with ReusableThreadingHTTPServer((HOST, port), RewDemoHandler) as server:
+        server.allowed_origins = {
+            f"http://127.0.0.1:{web_port}",
+            f"http://localhost:{web_port}",
+        }
         print(f"Demo REW API: http://{HOST}:{port}")
         server.serve_forever()
 
@@ -112,7 +110,7 @@ def main():
     if args.demo:
         demo_thread = threading.Thread(
             target=run_demo_server,
-            args=(DEFAULT_REW_PORT,),
+            args=(DEFAULT_REW_PORT, args.port),
             daemon=True,
         )
         demo_thread.start()

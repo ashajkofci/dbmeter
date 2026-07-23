@@ -126,10 +126,8 @@ class DecibelMeter {
         this.showError('');
 
         try {
-            if (!this.demoMode) {
-                await this.request('/spl-meter/commands');
-                await this.startSplMeter();
-            }
+            await this.request('/spl-meter/commands');
+            await this.startSplMeter();
 
             this.isConnected = true;
             this.consecutivePollFailures = 0;
@@ -171,7 +169,7 @@ class DecibelMeter {
         this.setConnectionState('disconnected');
         this.updateDisplay();
 
-        if (wasConnected && !this.demoMode && !connectionLost) {
+        if (wasConnected && !connectionLost) {
             this.request(`/spl-meter/${this.meterId}/command`, {
                 method: 'POST',
                 body: { command: 'Stop' }
@@ -186,9 +184,7 @@ class DecibelMeter {
             if (!this.isConnected) return;
 
             try {
-                const data = this.demoMode
-                    ? { spl: MeterCore.nextDemoValue(this.currentSpl) }
-                    : await this.request(`/spl-meter/${this.meterId}/levels`);
+                const data = await this.request(`/spl-meter/${this.meterId}/levels`);
                 const spl = MeterCore.parseSpl(data);
 
                 if (spl === null) {
