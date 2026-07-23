@@ -10,12 +10,18 @@ on:
         description: "Release version from package.json (for example: 1.1.0)"
         required: true
         type: string
+      signed:
+        description: "Require trusted Windows signing and Apple signing/notarization"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
 
 env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}
+  SIGNED_RELEASE: ${{ github.event_name != 'workflow_dispatch' || inputs.signed }}
 
 concurrency:
   group: release-${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref }}
@@ -73,9 +79,11 @@ jobs:
     env:
       CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
       CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      CSC_IDENTITY_AUTO_DISCOVERY: ${{ (github.event_name != 'workflow_dispatch' || inputs.signed) && 'true' || 'false' }}
 
     steps:
       - name: Require Windows signing credentials
+        if: env.SIGNED_RELEASE == 'true'
         shell: pwsh
         run: |
           if ([string]::IsNullOrWhiteSpace($env:CSC_LINK) -or [string]::IsNullOrWhiteSpace($env:CSC_KEY_PASSWORD)) {
@@ -105,6 +113,7 @@ jobs:
         run: npm run dist -- --win
 
       - name: Verify Authenticode signatures
+        if: env.SIGNED_RELEASE == 'true'
         shell: pwsh
         run: |
           $targets = @(
@@ -120,6 +129,14 @@ jobs:
               throw "Invalid signature on $($target.Name): $($signature.Status)"
             }
             Write-Host "$($target.Name) is signed by $($signature.SignerCertificate.Subject)"
+          }
+
+      - name: Mark unsigned Windows artifacts
+        if: env.SIGNED_RELEASE != 'true'
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path "dist/*.exe", "dist/*.zip" | ForEach-Object {
+            Rename-Item -Path $_.FullName -NewName "$($_.BaseName)-UNSIGNED$($_.Extension)"
           }
 
       - name: Upload Windows artifacts
@@ -144,9 +161,11 @@ jobs:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CSC_IDENTITY_AUTO_DISCOVERY: ${{ (github.event_name != 'workflow_dispatch' || inputs.signed) && 'true' || 'false' }}
 
     steps:
       - name: Require Apple signing and notarization credentials
+        if: env.SIGNED_RELEASE == 'true'
         shell: bash
         run: |
           required=(CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID)
@@ -177,15 +196,29 @@ jobs:
         run: npm ci
 
       - name: Build, sign, and notarize
+        if: env.SIGNED_RELEASE == 'true'
         run: npm run dist -- --mac
 
+      - name: Build unsigned packages
+        if: env.SIGNED_RELEASE != 'true'
+        run: npm run dist -- --mac --config.mac.notarize=false
+
       - name: Verify signatures, notarization, and Gatekeeper acceptance
+        if: env.SIGNED_RELEASE == 'true'
         shell: bash
         run: |
           codesign --verify --deep --strict --verbose=2 "dist/mac-universal/Acro dB Meter.app"
           spctl --assess --type execute --verbose=2 "dist/mac-universal/Acro dB Meter.app"
           xcrun stapler validate dist/*.dmg
           spctl --assess --type open --context context:primary-signature --verbose dist/*.dmg
+
+      - name: Mark unsigned macOS artifacts
+        if: env.SIGNED_RELEASE != 'true'
+        shell: bash
+        run: |
+          for artifact in dist/*.dmg dist/*.zip; do
+            mv "$artifact" "${artifact%.*}-UNSIGNED.${artifact##*.}"
+          done
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -218,6 +251,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          release_title="Acro dB Meter $RELEASE_TAG"
+          release_options=(--generate-notes)
+
+          if [[ "$SIGNED_RELEASE" != "true" ]]; then
+            release_title="$release_title (unsigned)"
+            release_options+=(
+              --prerelease
+              --notes
+              "⚠️ This pre-release is unsigned. Windows SmartScreen and macOS Gatekeeper may warn or block it. Verify SHA256SUMS.txt before use. No self-signed certificate was used."
+            )
+            printf '%s\n' \
+              'UNSIGNED BUILD' \
+              'These packages do not have a trusted publisher signature or Apple notarization.' \
+              'Windows SmartScreen and macOS Gatekeeper may warn or block them.' \
+              > release-assets/UNSIGNED-BUILD.txt
+          fi
+
           (
             cd release-assets
             sha256sum -- * > SHA256SUMS.txt
@@ -227,8 +277,8 @@ jobs:
             "$RELEASE_TAG"
             release-assets/*
             --repo "$GITHUB_REPOSITORY"
-            --title "Acro dB Meter $RELEASE_TAG"
-            --generate-notes
+            --title "$release_title"
+            "${release_options[@]}"
           )
 
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then

@@ -90,8 +90,17 @@ third-party action execution to reviewed commit SHAs.
 To publish a version such as `1.1.0`, open
 **Actions → Release desktop apps → Run workflow** on `main` and enter `1.1.0`.
 The manual workflow applies that version to both packages without modifying the
-repository. After the protected-environment approval, it creates the `v1.1.0`
-tag and GitHub release.
+repository.
+
+Leave **Require trusted Windows signing and Apple signing/notarization**
+unchecked if you do not have certificates. This creates an explicitly
+`-UNSIGNED` GitHub pre-release with checksums. Windows SmartScreen and macOS
+Gatekeeper may warn or block those packages; this cannot be securely avoided
+without trusted platform certificates. No self-signed certificate is generated.
+
+Check that option only after configuring all secrets below. After the
+protected-environment approval, the workflow creates the version tag and
+GitHub release.
 
 Alternatively, update the version in `package.json` and push a matching release
 tag:
@@ -101,9 +110,9 @@ git tag -s v1.1.0 -m "Acro dB Meter 1.1.0"
 git push origin v1.1.0
 ```
 
-An annotated tag also works when GPG tag signing is not configured. The
-workflow deliberately stops if any signing or notarization secret is absent,
-so it cannot publish an unsigned release by mistake.
+An annotated tag also works when GPG tag signing is not configured. Tag-push
+releases are always treated as signed releases and deliberately stop if any
+signing or notarization secret is absent.
 
 ## Security design
 
