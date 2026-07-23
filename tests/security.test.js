@@ -34,6 +34,8 @@ assert.match(releaseWorkflow, /--prerelease/);
 assert.match(releaseWorkflow, /No self-signed certificate was used/);
 assert.match(releaseWorkflow, /Remove-Item Env:CSC_LINK/);
 assert.match(releaseWorkflow, /unset CSC_LINK/);
+assert.match(releaseWorkflow, /--config\.win\.signExecutable=false/);
+assert.equal(packageManifest.build.compression, 'normal');
 assert.doesNotMatch(releaseWorkflow, /uses:\s+\S+@v\d/);
 
 console.log('desktop security tests passed');

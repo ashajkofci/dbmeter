@@ -42,7 +42,7 @@
     "productName": "Acro dB Meter",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "asar": true,
-    "compression": "maximum",
+    "compression": "normal",
     "directories": {
       "output": "dist",
       "buildResources": "build"
